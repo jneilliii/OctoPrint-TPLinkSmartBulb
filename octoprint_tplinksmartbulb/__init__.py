@@ -125,7 +125,7 @@ class tplinksmartbulbPlugin(octoprint.plugin.SettingsPlugin,
 			response = self.sendCommand('{"system":{"get_sysinfo":{}}}', bulbip)
 			self._tplinksmartbulb_logger.info(response)
 				
-			chk = self.lookup(response,*["smartlife.iot.smartbulb.lightingservice","transition_light_state","on_off"])
+			chk = self.lookup(response,*["system","get_sysinfo","light_state","on_off"])
 			if chk == 1:
 				self._plugin_manager.send_plugin_message(self._identifier, dict(currentState="on",ip=bulbip))
 			elif chk == 0:
