@@ -141,7 +141,7 @@ $(function() {
         };
 
     	self.turnOff = function(data) {
-			if((data.displayWarning() || (self.isPrinting() && data.warnPrinting())) && !$("#TPLinkSmartPlugWarning").is(':visible')){
+			if((data.displayWarning() || (self.isPrinting() && data.warnPrinting())) && !$("#TPLinkSmartBulbWarning").is(':visible')){
 				self.selectedBulb(data);
 				$("#TPLinkSmartBulbWarning").modal("show");
 			} else {
