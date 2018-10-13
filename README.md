@@ -34,7 +34,7 @@ Once installed go into settings and enter the ip address for your TP-Link SmartB
   - Will only warn when printer is printing.
 - **GCODE Trigger**
   - When checked this will enable the processing of M80 and M81 commands from gcode to power on/off bulb.  Syntax for gcode command is M80/M81 followed by hostname/ip.  For example if your bulb is 192.168.1.2 your gcode command would be **M80 192.168.1.2**
-  - When enabled M150 GCODE commands will also get translated and submitted to the bulb to change the color of the bulb. Use the format M150 R<value> U<value> B<value> P<value> W<value> I<bulb ip>.
+  - When enabled M150 GCODE commands will also get translated and submitted to the bulb to change the color of the bulb. Use the format M150 R<value> U<value> B<value> P<value> W<value> I<bulb ip>. For example `M150 I192.168.1.2 R255 G128 B128 P128` will turn the bulb with ip 192.168.1.2 to an orangish color at 50% brightness.
   - **Auto Connect**
   - Automatically connect to printer after bulb is powered on.
   - Will wait for number of seconds configured in **Auto Connect Delay** setting prior to attempting connection to printer.

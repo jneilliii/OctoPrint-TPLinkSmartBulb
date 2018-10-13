@@ -91,7 +91,7 @@ class tplinksmartbulbPlugin(octoprint.plugin.SettingsPlugin,
 		self._tplinksmartbulb_logger.debug("Turning on %s." % bulbip)
 		bulb = self.bulb_search(self._settings.get(["arrSmartBulbs"]),"ip",bulbip)
 		self._tplinksmartbulb_logger.debug(bulb)
-		chk = self.sendCommand('{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"on_off":1}}}',bulbip)["smartlife.iot.smartbulb.lightingservice"]["err_code"]
+		chk = self.sendCommand('{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"on_off":1}}}',bulbip)["smartlife.iot.smartbulb.lightingservice"]["transition_light_state"]["err_code"]
 			
 		if chk == 0:
 			self.check_status(bulbip)
@@ -114,7 +114,7 @@ class tplinksmartbulbPlugin(octoprint.plugin.SettingsPlugin,
 			self._printer.disconnect()
 			time.sleep(int(bulb["autoDisconnectDelay"]))
 			
-		chk = self.sendCommand('{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"on_off":0}}}',bulbip)["smartlife.iot.smartbulb.lightingservice"]["err_code"]
+		chk = self.sendCommand('{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"on_off":0}}}',bulbip)["smartlife.iot.smartbulb.lightingservice"]["transition_light_state"]["err_code"]
 			
 		if chk == 0:
 			self.check_status(bulbip)
@@ -122,10 +122,10 @@ class tplinksmartbulbPlugin(octoprint.plugin.SettingsPlugin,
 	def check_status(self, bulbip):
 		self._tplinksmartbulb_logger.debug("Checking status of %s." % bulbip)
 		if bulbip != "":
-			response = self.sendCommand('{"system":{"get_sysinfo":{}}}', bulbip)
+			response = self.sendCommand('{"smartlife.iot.smartbulb.lightingservice":{"get_light_state":""}}', bulbip)
 			self._tplinksmartbulb_logger.info(response)
 				
-			chk = self.lookup(response,*["system","get_sysinfo","light_state","on_off"])
+			chk = self.lookup(response,*["smartlife.iot.smartbulb.lightingservice","get_light_state","on_off"])
 			if chk == 1:
 				self._plugin_manager.send_plugin_message(self._identifier, dict(currentState="on",ip=bulbip))
 			elif chk == 0:
@@ -237,7 +237,7 @@ class tplinksmartbulbPlugin(octoprint.plugin.SettingsPlugin,
 			sock_tcp.close()
 			
 			self._tplinksmartbulb_logger.debug("Sending command %s to %s" % (cmd,bulbip))
-			self._tplinksmartbulb_logger.debug(self.decrypt(data))
+			self._tplinksmartbulb_logger.debug("Received response %s " % self.decrypt(data[4:]))
 			return json.loads(self.decrypt(data[4:]))
 		except socket.error:
 			self._tplinksmartbulb_logger.debug("Could not connect to %s." % bulbip)
@@ -274,7 +274,7 @@ class tplinksmartbulbPlugin(octoprint.plugin.SettingsPlugin,
 					t.start()
 				return
 			elif workcmd.startswith("M150"):
-				workleds = dict()
+				workleds = dict(LEDRed = 255,LEDBlue = 255,LEDGreen = 255,LEDWhite = 255,LEDBrightness = 100)
 				workval = workcmd.split()
 				for i in workval:
 					firstchar = str(i[0].upper())
@@ -296,17 +296,22 @@ class tplinksmartbulbPlugin(octoprint.plugin.SettingsPlugin,
 					elif firstchar == "W":
 						workleds['LEDWhite'] = int(leddata)
 					elif firstchar == "P":
-						workleds['LEDBrightness'] = int(leddata)
+						workleds['LEDBrightness'] = int(float(leddata)/255*100)
 					else:
 						self._tplinksmartbulb_logger.debug(leddata)
 
 				bulb = self.bulb_search(self._settings.get(["arrSmartBulbs"]),"ip",bulbip)
 				self._tplinksmartbulb_logger.debug("Received M150 command, attempting color change of %s." % bulbip)
 				self._tplinksmartbulb_logger.debug(workleds)
-				if bulb["gcodeEnabled"]:
+				if bulb["gcodeEnabled"] and bulbip:
 					led_hsv = self.rgb2hsv(workleds['LEDRed'], workleds['LEDGreen'], workleds['LEDBlue'])
-					chk = self.sendCommand('{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"saturation":%d,"brightness":%d,"mode":"normal","color_temp":%d,"hue":%d,"transition_period":3000}}}' % (led_hsv['saturation'],int(workleds['LEDBrightness']/255),led_hsv['value'],led_hsv['hue']),bulbip)
-					self._tplinksmartbulb_logger.debug(chk)
+					self._tplinksmartbulb_logger.debug("HSV: %s" % led_hsv)
+					message = '{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"brightness":%d,"hue":%d,"ignore_default":1,"mode":"normal","on_off":1,"saturation":%d,"transition_period":3000,"color_temp":0}}}' % (workleds['LEDBrightness'],led_hsv['hue'],led_hsv['saturation'])
+					chk = self.sendCommand(message,bulbip)
+					return
+				elif bulb["gcodeEnabled"]:
+					self._tplinksmartbulb_logger.debug("M150 Error: no ip")
+					
 
 	##~~ Softwareupdate hook
 
