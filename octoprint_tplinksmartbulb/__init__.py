@@ -11,6 +11,7 @@ import re
 import threading
 import time
 from datetime import datetime
+from builtins import bytes
 
 class tplinksmartbulbPlugin(octoprint.plugin.SettingsPlugin,
                             octoprint.plugin.AssetPlugin,
@@ -181,24 +182,43 @@ class tplinksmartbulbPlugin(octoprint.plugin.SettingsPlugin,
 		for item in list: 
 			if item[key] == value: 
 				return item
-	
+
 	def encrypt(self, string):
 		key = 171
-		result = "\0\0\0"+chr(len(string))
-		for i in string: 
-			a = key ^ ord(i)
+		result = b"\0\0\0" + bytes([len(string)])
+		for i in bytes(string.encode('latin-1')):
+			a = key ^ i
 			key = a
-			result += chr(a)
+			result += bytes([a])
 		return result
 
+
 	def decrypt(self, string):
-		key = 171 
-		result = ""
-		for i in string: 
-			a = key ^ ord(i)
-			key = ord(i) 
-			result += chr(a)
-		return result
+		key = 171
+		result = b""
+		for i in bytes(string):
+			a = key ^ i
+			key = i
+			result += bytes([a])
+		return result.decode('latin-1')
+
+	# def encrypt(self, string):
+		# key = 171
+		# result = "\0\0\0"+chr(len(string))
+		# for i in string: 
+			# a = key ^ ord(i)
+			# key = a
+			# result += chr(a)
+		# return result
+
+	# def decrypt(self, string):
+		# key = 171 
+		# result = ""
+		# for i in string: 
+			# a = key ^ ord(i)
+			# key = ord(i) 
+			# result += chr(a)
+		# return result
 	
 	def sendCommand(self, cmd, bulbip):
 		commands = {'info'     : '{"system":{"get_sysinfo":{}}}',
@@ -316,9 +336,6 @@ class tplinksmartbulbPlugin(octoprint.plugin.SettingsPlugin,
 	##~~ Softwareupdate hook
 
 	def get_update_information(self):
-		# Define the configuration for your plugin to use with the Software Update
-		# Plugin here. See https://github.com/foosel/OctoPrint/wiki/Plugin:-Software-Update
-		# for details.
 		return dict(
 			tplinksmartbulb=dict(
 				displayName="TP-Link SmartBulb",
@@ -335,11 +352,8 @@ class tplinksmartbulbPlugin(octoprint.plugin.SettingsPlugin,
 			)
 		)
 
-
-# If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
-# ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
-# can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
 __plugin_name__ = "TP-Link SmartBulb"
+__plugin_pythoncompat__ = ">=2.7,<4"
 
 def __plugin_load__():
 	global __plugin_implementation__
